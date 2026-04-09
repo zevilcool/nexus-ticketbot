@@ -1,0 +1,175 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model GuildConfig {
+  id                String   @id @default(cuid())
+  guildId           String   @unique
+  ticketCategoryId  String?
+  logChannelId      String?
+  modLogChannelId   String?
+  staffRoleIds      String   @default("[]")
+  adminRoleIds      String   @default("[]")
+  panelPingRoleIds  String   @default("[]") // JSON: string[] — roles pinged when a ticket is opened
+  maxTicketsPerUser Int      @default(3)
+  ticketCooldownMs  Int      @default(300000)
+  inactivityHours   Int      @default(48)
+  warnBeforeHours   Int      @default(12)
+  escalationHours   Int      @default(72)
+  cacheTtlDays      Int      @default(7)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("guild_configs")
+}
+
+model Ticket {
+  id             String     @id @default(cuid())
+  ticketNum      Int
+  guildId        String
+  channelId      String?    @unique
+  userId         String
+  categoryKey    String
+  status         String     @default("OPEN")
+  priority       String     @default("MEDIUM")
+  assignedTo     String?
+  subject        String?
+  closedAt       DateTime?
+  closedBy       String?
+  closeReason    String?
+  warnedAt       DateTime?
+  lastActivityAt DateTime   @default(now())
+  openerMsgCount Int        @default(0)  // messages sent by ticket creator
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  notes      TicketNote[]
+  ticketLogs TicketLog[]
+  transcript Transcript?
+
+  @@unique([guildId, ticketNum])
+  @@index([guildId, status])
+  @@index([userId, guildId])
+  @@index([channelId])
+  @@map("tickets")
+}
+
+model TicketNote {
+  id        String   @id @default(cuid())
+  ticketId  String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_notes")
+}
+
+model TicketLog {
+  id        String   @id @default(cuid())
+  ticketId  String
+  action    String
+  actorId   String
+  details   String?
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("ticket_logs")
+}
+
+model Transcript {
+  id        String   @id @default(cuid())
+  ticketId  String   @unique
+  content   String
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("transcripts")
+}
+
+model UserCooldown {
+  id          String   @id @default(cuid())
+  userId      String
+  guildId     String
+  categoryKey String
+  expiresAt   DateTime
+
+  @@unique([userId, guildId, categoryKey])
+  @@index([expiresAt])
+  @@map("user_cooldowns")
+}
+
+model MessageCache {
+  id          String   @id @default(cuid())
+  messageId   String   @unique
+  channelId   String
+  guildId     String
+  authorId    String
+  content     String   @default("")
+  attachments String   @default("[]")
+  embeds      String   @default("[]")
+  stickers    String   @default("[]")
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([messageId])
+  @@index([channelId])
+  @@index([guildId])
+  @@index([expiresAt])
+  @@map("message_cache")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  guildId    String
+  eventType  String
+  actorId    String?
+  targetId   String?
+  targetType String?
+  details    String   @default("{}")
+  channelId  String?
+  messageId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([guildId, eventType])
+  @@index([guildId, createdAt])
+  @@index([actorId])
+  @@index([targetId])
+  @@map("audit_logs")
+}
+
+model GuildStats {
+  id            String   @id @default(cuid())
+  guildId       String   @unique
+  totalTickets  Int      @default(0)
+  openTickets   Int      @default(0)
+  closedTickets Int      @default(0)
+  totalMessages Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  @@map("guild_stats")
+}
+
+model Blacklist {
+  id        String   @id @default(cuid())
+  userId    String
+  guildId   String
+  reason    String?
+  addedBy   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, guildId])
+  @@index([guildId])
+  @@map("blacklists")
+}
