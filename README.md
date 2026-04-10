@@ -37,7 +37,7 @@ this is a discord bot for managing support tickets and logging server activity. 
 
 ### 1. Clone the repos and install
 ```bash
-git clone https://github.com/zevilcool/ticketbot.git
+git clone https://github.com/zevilcool/nexus-ticketbot.git
 cd ticketbot
 npm install
 ```
