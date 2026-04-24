@@ -96,6 +96,12 @@ if something breaks, double-check your .env first (it’s usually that)
 
 feel free to tweak things! the structure is meant to be easy to extend
 
+if it shows this kind of error: [deploy] Failed to register commands {"error":"Missing Access"}
+3 possible thing could happens: 
+1. your bot token are bad
+2. your client id doesn't match with the token
+3. the bot arent inside the guild (if u fill the GUILD_ID)
+
 ## License
 
 MIT llicense. see `license` file for more details!
